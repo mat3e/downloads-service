@@ -1,0 +1,42 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '2.7.15'
+	id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+	id 'java-test-fixtures'
+}
+
+group = 'io.github.mat3e.downloads'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	sourceCompatibility = '11'
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.zalando:problem-spring-web-starter:0.27.0'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+	implementation 'org.springframework.boot:spring-boot-starter-data-rest'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.flywaydb:flyway-core'
+	annotationProcessor 'org.projectlombok:lombok'
+	compileOnly 'org.projectlombok:lombok'
+	runtimeOnly 'com.h2database:h2'
+	testFixturesApi 'org.springframework.boot:spring-boot-starter-test'
+	testFixturesAnnotationProcessor 'org.projectlombok:lombok'
+	testFixturesCompileOnly 'org.projectlombok:lombok'
+	testFixturesImplementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
