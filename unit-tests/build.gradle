@@ -1,0 +1,10 @@
+plugins {
+	id 'org.springframework.boot' version "$bootVersion" apply false
+}
+
+dependencies {
+	testImplementation project(':core')
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
