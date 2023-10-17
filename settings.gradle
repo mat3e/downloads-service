@@ -4,4 +4,6 @@ include 'core'
 include 'unit-tests'
 include 'int-tests'
 include 'sliced-int-tests'
-
+include 'tc-int-tests'
+include 'restarting-tc-int-tests'
+include 'reused-tc-int-tests'
