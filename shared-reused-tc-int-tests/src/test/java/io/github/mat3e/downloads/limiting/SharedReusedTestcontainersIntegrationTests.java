@@ -13,8 +13,8 @@ import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.containers.KafkaContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.lifecycle.Startables;
 import org.testcontainers.utility.DockerImageName;
 
 import java.time.Clock;
@@ -35,11 +35,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@Testcontainers
-class TestcontainersIntegrationTests {
-    @Container
+class SharedReusedTestcontainersIntegrationTests {
     @ServiceConnection
-    static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.4.6"));
+    static KafkaContainer kafka =
+            new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.4.6")).withReuse(true);
+
+    @ServiceConnection
+    static MariaDBContainer<?> mariaDb =
+            new MariaDBContainer<>(DockerImageName.parse("mariadb:11")).withReuse(true);
+
+    static {
+        Startables.deepStart(mariaDb, kafka).join();
+    }
 
     @Nested
     @IntegrationTest
@@ -104,7 +111,7 @@ class TestcontainersIntegrationTests {
         void nonExisting_returnsNotFound() throws Exception {
             // expect 404
             httpGetAssets("lookMaNotExistingId").andExpect(status().isNotFound());
-            httpPostAsset("{ \"id\": \"123\", \"countryCode\": \"US\" }").andExpect(status().isNotFound());
+            httpPostAsset("{ \"id\": \"abc\", \"countryCode\": \"US\" }").andExpect(status().isNotFound());
             httpDeleteAsset("123", "US").andExpect(status().isNotFound());
             httpPostAssetForAccount(
                     "  ",
@@ -187,8 +194,8 @@ class TestcontainersIntegrationTests {
             // when
             systemUnderTest.save(account);
 
-            then(systemUnderTest.findById(account.id())).hasValueSatisfying(insertedAccount -> then(insertedAccount.assets()).hasSize(
-                    1));
+            then(systemUnderTest.findById(account.id())).hasValueSatisfying(insertedAccount ->
+                    then(insertedAccount.assets()).hasSize(1));
 
             thenExceptionOfType(DuplicateKeyException.class).isThrownBy(() -> jdbc.update(
                     "INSERT INTO downloaded_assets (asset_id, country_code, account, downloading_accounts_key) VALUES (?, ?, ?, ?)",

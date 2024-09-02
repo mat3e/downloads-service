@@ -9,6 +9,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.containers.KafkaContainer;
@@ -44,6 +45,9 @@ class ReusedTestcontainersIntegrationTests {
         private KafkaTemplate<String, Message> kafkaTemplate;
 
         @Autowired
+        private JdbcTemplate jdbc;
+
+        @Autowired
         private LimitingFacade facadeNeededByListener;
 
         @ServiceConnection
@@ -65,6 +69,10 @@ class ReusedTestcontainersIntegrationTests {
             await().atMost(5, SECONDS).until(interactedWithFacade());
 
             then(facadeNeededByListener.findForAccount(ACCOUNT_ID)).isPresent();
+
+            // cleaning as different thread committed
+            TestTransaction.end();
+            jdbc.update("delete from downloading_accounts where id = ?", ACCOUNT_ID.getId());
         }
 
         private void whenAccountLimitMessage(int limit) throws ExecutionException, InterruptedException {
@@ -117,6 +125,10 @@ class ReusedTestcontainersIntegrationTests {
             httpGetAssets("lookMaNotExistingId").andExpect(status().isNotFound());
             httpPostAsset("{ \"id\": \"123\", \"countryCode\": \"US\" }").andExpect(status().isNotFound());
             httpDeleteAsset("123", "US").andExpect(status().isNotFound());
+            httpPostAssetForAccount(
+                    "  ",
+                    "{ \"id\": \"123\", \"countryCode\": \"US\" }"
+            ).andExpect(status().isNotFound());
         }
 
         @Test
@@ -207,8 +219,8 @@ class ReusedTestcontainersIntegrationTests {
             // when
             systemUnderTest.save(account);
 
-            then(systemUnderTest.findById(account.id())).hasValueSatisfying(insertedAccount -> then(insertedAccount.assets()).hasSize(
-                    1));
+            then(systemUnderTest.findById(account.id())).hasValueSatisfying(insertedAccount ->
+                    then(insertedAccount.assets()).hasSize(1));
 
             thenExceptionOfType(DuplicateKeyException.class).isThrownBy(() -> jdbc.update(
                     "INSERT INTO downloaded_assets (asset_id, country_code, account, downloading_accounts_key) VALUES (?, ?, ?, ?)",

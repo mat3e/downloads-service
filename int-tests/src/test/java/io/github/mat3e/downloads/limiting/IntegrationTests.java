@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -39,6 +40,9 @@ class IntegrationTests {
         private KafkaTemplate<String, Message> kafkaTemplate;
 
         @Autowired
+        private JdbcTemplate jdbc;
+
+        @Autowired
         private LimitingFacade facadeNeededByListener;
 
         @Test
@@ -48,6 +52,10 @@ class IntegrationTests {
             await().atMost(5, SECONDS).until(interactedWithFacade());
 
             then(facadeNeededByListener.findForAccount(ACCOUNT_ID)).isPresent();
+
+            // cleaning as different thread committed
+            TestTransaction.end();
+            jdbc.update("delete from downloading_accounts where id = ?", ACCOUNT_ID.getId());
         }
 
         private void whenAccountLimitMessage(int limit) throws ExecutionException, InterruptedException {

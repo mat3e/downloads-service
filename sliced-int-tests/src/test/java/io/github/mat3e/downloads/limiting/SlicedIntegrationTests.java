@@ -53,7 +53,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class SlicedIntegrationTests {
     @Nested
-    @SpringBootTest(classes = {DownloadsApplication.class, LimitingConfiguration.class})
+    @SpringBootTest(classes = {DownloadsApplication.class})
     @TestInstance(PER_CLASS)
     @EmbeddedKafka(partitions = 1, brokerProperties = {"listeners=PLAINTEXT://localhost:9092", "port=9092"})
     class AccountLimitEventListenerTest {
