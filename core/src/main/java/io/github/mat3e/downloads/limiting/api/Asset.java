@@ -3,7 +3,7 @@ package io.github.mat3e.downloads.limiting.api;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 import static lombok.AccessLevel.PRIVATE;
 

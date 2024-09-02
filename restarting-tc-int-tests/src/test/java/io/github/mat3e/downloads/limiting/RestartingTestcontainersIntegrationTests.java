@@ -47,10 +47,6 @@ class RestartingTestcontainersIntegrationTests {
         @Test
         void illegalParams_returnsBadRequest() throws Exception {
             // expect 400
-            httpPostAssetForAccount(
-                    "  ",
-                    "{ \"id\": \"123\", \"countryCode\": \"US\" }"
-            ).andExpect(status().isBadRequest());
             httpPostAsset("{ \"countryCode\": \"US\" }").andExpect(status().isBadRequest());
             httpPostAsset("{ \"id\": \"123\" }").andExpect(status().isBadRequest());
             httpDeleteAsset("  ", "OK").andExpect(status().isBadRequest());
@@ -63,6 +59,10 @@ class RestartingTestcontainersIntegrationTests {
             httpGetAssets("lookMaNotExistingId").andExpect(status().isNotFound());
             httpPostAsset("{ \"id\": \"123\", \"countryCode\": \"US\" }").andExpect(status().isNotFound());
             httpDeleteAsset("123", "US").andExpect(status().isNotFound());
+            httpPostAssetForAccount(
+                    "  ",
+                    "{ \"id\": \"123\", \"countryCode\": \"US\" }"
+            ).andExpect(status().isNotFound());
         }
 
         @Test

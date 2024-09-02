@@ -3,13 +3,14 @@ package io.github.mat3e.downloads.limiting;
 import io.github.mat3e.downloads.limiting.LimitingFacade.AccountLimitExceeded;
 import io.github.mat3e.downloads.limiting.api.AccountId;
 import io.github.mat3e.downloads.limiting.api.Asset;
-import io.github.mat3e.downloads.limiting.event.SuspiciousLimitingEvent;
+import io.github.mat3e.downloads.limiting.event.out.SuspiciousLimitingEvent;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.MappedCollection;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Clock;
@@ -28,6 +29,7 @@ class Account {
     @Id
     @EqualsAndHashCode.Include
     private final String id;
+    @MappedCollection(idColumn = "account")
     private final List<DownloadedAsset> assets;
     @Column("limitation")
     private final Integer limit;

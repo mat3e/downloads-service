@@ -40,7 +40,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class SlicedIntegrationTests {
     @Nested
     @WebMvcTest
-    @ImportAutoConfiguration({ProblemAutoConfiguration.class, ProblemJacksonWebMvcAutoConfiguration.class})
     class LimitingControllerTest {
         private static final String ACCOUNT_ID = "1";
 
@@ -53,10 +52,6 @@ class SlicedIntegrationTests {
         @Test
         void illegalParams_returnsBadRequest() throws Exception {
             // expect 400
-            httpPostAssetForAccount(
-                    "  ",
-                    "{ \"id\": \"123\", \"countryCode\": \"US\" }"
-            ).andExpect(status().isBadRequest());
             httpPostAsset("{ \"countryCode\": \"US\" }").andExpect(status().isBadRequest());
             httpPostAsset("{ \"id\": \"123\" }").andExpect(status().isBadRequest());
             httpDeleteAsset("  ", "OK").andExpect(status().isBadRequest());

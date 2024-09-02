@@ -4,10 +4,10 @@ import io.github.mat3e.downloads.limiting.LimitingFacade;
 import io.github.mat3e.downloads.limiting.LimitingFacade.AccountLimitExceeded;
 import io.github.mat3e.downloads.limiting.api.AccountId;
 import io.github.mat3e.downloads.limiting.api.Asset;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,11 +17,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.Valid;
 import java.net.URI;
 import java.util.List;
 
-@Validated
 @RestController
 @RequestMapping("/api/accounts/{accountId}/assets")
 @RequiredArgsConstructor
@@ -39,6 +37,7 @@ class LimitingController {
         return ResponseEntity.created(URI.create("/")).build();
     }
 
+    @SuppressWarnings("java:S6856") // Spring builds Asset from path and query, no need to declare @PathVariable
     @DeleteMapping(path = "/{id}", params = "countryCode")
     ResponseEntity<Void> removeAsset(@Valid @PathVariable AccountId accountId, @Valid Asset asset) {
         facade.removeDownloadedAsset(accountId, asset);
