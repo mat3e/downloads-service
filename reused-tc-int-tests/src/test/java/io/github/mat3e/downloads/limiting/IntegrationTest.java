@@ -3,6 +3,7 @@ package io.github.mat3e.downloads.limiting;
 import org.junit.jupiter.api.Tag;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.annotation.Documented;
@@ -16,6 +17,7 @@ import java.lang.annotation.Target;
 @Transactional
 @AutoConfigureMockMvc
 @SpringBootTest
+@ActiveProfiles("test")
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
