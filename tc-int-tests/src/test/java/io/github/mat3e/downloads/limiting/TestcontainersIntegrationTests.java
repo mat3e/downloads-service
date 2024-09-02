@@ -5,26 +5,73 @@ import io.github.mat3e.downloads.limiting.api.Asset;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 import static java.util.Collections.emptyList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.assertj.core.api.BDDAssertions.thenExceptionOfType;
+import static org.awaitility.Awaitility.await;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Testcontainers
 class TestcontainersIntegrationTests {
+    @Container
+    @ServiceConnection
+    static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.4.6"));
+
+    @Nested
+    @IntegrationTest
+    class AccountLimitEventListenerTest {
+        private static final AccountId ACCOUNT_ID = AccountId.valueOf("1");
+
+        @Autowired
+        private KafkaTemplate<String, Message> kafkaTemplate;
+
+        @Autowired
+        private LimitingFacade facadeNeededByListener;
+
+        @Test
+        void incomingMessage_startsProcessing() throws ExecutionException, InterruptedException {
+            whenAccountLimitMessage(2);
+            // and
+            await().atMost(5, SECONDS).until(interactedWithFacade());
+
+            then(facadeNeededByListener.findForAccount(ACCOUNT_ID)).isPresent();
+        }
+
+        private void whenAccountLimitMessage(int limit) throws ExecutionException, InterruptedException {
+            kafkaTemplate.send("limit-changes", new Message(ACCOUNT_ID.getId(), limit)).get();
+        }
+
+        private Callable<Boolean> interactedWithFacade() {
+            return () -> facadeNeededByListener.findForAccount(ACCOUNT_ID).isPresent();
+        }
+
+        record Message(String accountId, int limit) {
+        }
+    }
+
     @Nested
     @IntegrationTest
     class LimitingControllerTest {
