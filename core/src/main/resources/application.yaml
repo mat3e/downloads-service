@@ -7,6 +7,8 @@ spring:
       group-id: 'test'
       value-deserializer: 'org.springframework.kafka.support.serializer.JsonDeserializer'
       properties:
-        spring.json.type.mapping: 'msg:io.github.mat3e.downloads.limiting.event.in.AccountLimitEventListener$Message'
+        spring.json:
+          type.mapping: 'msg:io.github.mat3e.downloads.limiting.event.in.AccountLimitEventListener$Message'
+          trusted.packages: '*'
   datasource:
     url: 'jdbc:h2:file:./filedb;CASE_INSENSITIVE_IDENTIFIERS=TRUE'

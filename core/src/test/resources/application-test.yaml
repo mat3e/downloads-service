@@ -1,4 +1,9 @@
 spring:
+  kafka:
+    producer:
+      value-serializer: 'org.springframework.kafka.support.serializer.JsonSerializer'
+      properties:
+        spring.json.type.mapping: 'msg:io.github.mat3e.downloads.limiting.LimitingIntTest$AccountWithLimit'
   datasource:
     url: 'jdbc:h2:mem:testdb;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1'
 

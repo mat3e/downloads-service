@@ -3,7 +3,7 @@ package io.github.mat3e.downloads.limiting;
 import io.github.mat3e.downloads.exceptionhandling.BusinessException;
 import io.github.mat3e.downloads.limiting.api.AccountId;
 import io.github.mat3e.downloads.limiting.api.Asset;
-import io.github.mat3e.downloads.limiting.event.SuspiciousLimitingEvent;
+import io.github.mat3e.downloads.limiting.event.out.SuspiciousLimitingEvent;
 import io.github.mat3e.downloads.reporting.ReportingFacade;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

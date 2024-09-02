@@ -1,4 +1,4 @@
-package io.github.mat3e.downloads.limiting.event;
+package io.github.mat3e.downloads.limiting.event.out;
 
 import io.github.mat3e.downloads.limiting.api.AccountId;
 import io.github.mat3e.downloads.limiting.api.Asset;

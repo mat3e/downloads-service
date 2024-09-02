@@ -1,35 +1,53 @@
 package io.github.mat3e.downloads.limiting;
 
+import io.github.mat3e.downloads.DownloadsApplication;
 import io.github.mat3e.downloads.exceptionhandling.BusinessException;
 import io.github.mat3e.downloads.limiting.api.AccountId;
 import io.github.mat3e.downloads.limiting.api.Asset;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.mockito.BDDMockito;
+import org.mockito.exceptions.verification.NeverWantedButInvoked;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.data.jdbc.DataJdbcTest;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTestContextBootstrapper;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.test.context.EmbeddedKafka;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.BootstrapWith;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.zalando.problem.spring.web.autoconfigure.ProblemAutoConfiguration;
-import org.zalando.problem.spring.web.autoconfigure.ProblemJacksonWebMvcAutoConfiguration;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 import static java.util.Collections.emptyList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.assertj.core.api.BDDAssertions.thenExceptionOfType;
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace.NONE;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -37,7 +55,49 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@ActiveProfiles("test")
 class SlicedIntegrationTests {
+    @Nested
+    @SpringBootTest(classes = {DownloadsApplication.class, LimitingConfiguration.class})
+    @TestInstance(PER_CLASS)
+    @EmbeddedKafka(partitions = 1, brokerProperties = {"listeners=PLAINTEXT://localhost:9092", "port=9092"})
+    class AccountLimitEventListenerTest {
+        private static final AccountId ACCOUNT_ID = AccountId.valueOf("1");
+
+        @Autowired
+        private KafkaTemplate<String, Message> kafkaTemplate;
+
+        @MockBean
+        LimitingFacade facadeNeededByListener;
+
+        @Test
+        void incomingMessage_startsProcessing() throws ExecutionException, InterruptedException {
+            whenAccountLimitMessage(2);
+            // and
+            await().atMost(5, SECONDS).until(interactedWithFacade());
+
+            BDDMockito.then(facadeNeededByListener).should().overrideAccountLimit(ACCOUNT_ID, 2);
+        }
+
+        private void whenAccountLimitMessage(int limit) throws ExecutionException, InterruptedException {
+            kafkaTemplate.send("limit-changes", new Message(ACCOUNT_ID.getId(), limit)).get();
+        }
+
+        private Callable<Boolean> interactedWithFacade() {
+            return () -> {
+                try {
+                    verify(facadeNeededByListener, never()).overrideAccountLimit(any(), anyInt());
+                    return false;
+                } catch (NeverWantedButInvoked neverInvoked) {
+                    return true;
+                }
+            };
+        }
+
+        record Message(String accountId, int limit) {
+        }
+    }
+
     @Nested
     @WebMvcTest
     class LimitingControllerTest {
