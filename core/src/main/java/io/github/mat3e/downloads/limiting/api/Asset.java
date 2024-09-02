@@ -1,9 +1,8 @@
 package io.github.mat3e.downloads.limiting.api;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
-
-import jakarta.validation.constraints.NotBlank;
 
 import static lombok.AccessLevel.PRIVATE;
 
