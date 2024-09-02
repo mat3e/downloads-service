@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.BDDMockito;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -17,8 +16,9 @@ import java.time.Clock;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.BDDAssertions.then;
+import static org.assertj.core.api.BDDAssertions.and;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -70,6 +70,7 @@ class UnitTests {
         }
     }
 
+    @SuppressWarnings("AccessStaticViaInstance") // "and" is AssertJ way to avoid 2 "then" methods
     @Nested
     @ExtendWith(MockitoExtension.class)
     class MockitoExtensionLimitingFacadeTest {
@@ -96,10 +97,10 @@ class UnitTests {
             // when
             systemUnderTest.overrideAccountLimit(accountId, 1);
 
-            BDDMockito.then(accountSettingRepository).should().save(accountSettingCaptor.capture());
+            then(accountSettingRepository).should().save(accountSettingCaptor.capture());
             var account = accountSettingCaptor.getValue();
-            then(account.id()).isEqualTo(accountId);
-            then(account.limit()).isEqualTo(1);
+            and.then(account.id()).isEqualTo(accountId);
+            and.then(account.limit()).isEqualTo(1);
         }
 
         @Test
@@ -111,8 +112,8 @@ class UnitTests {
             // when
             systemUnderTest.overrideAccountLimit(accountId, 1);
 
-            then(existingAccount.limit()).isEqualTo(1);
-            BDDMockito.then(accountSettingRepository).should().save(existingAccount);
+            then(accountSettingRepository).should().save(existingAccount);
+            and.then(existingAccount.limit()).isEqualTo(1);
         }
     }
 }

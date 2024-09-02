@@ -15,7 +15,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toUnmodifiableList;
@@ -52,7 +52,7 @@ class Account {
             throw new AccountLimitExceeded(limit);
         }
         var events = new ArrayList<SuspiciousLimitingEvent>();
-        findSimilarTo(asset).ifPresent(downloadedAsset -> events.add(SuspiciousLimitingEvent.assetAlreadyInDifferentCountry(
+        findSimilarTo(asset).forEach(downloadedAsset -> events.add(SuspiciousLimitingEvent.assetAlreadyInDifferentCountry(
                 clock,
                 id(),
                 asset,
@@ -61,8 +61,8 @@ class Account {
         return events;
     }
 
-    private Optional<DownloadedAsset> findSimilarTo(Asset asset) {
-        return assets.stream().filter(existingAsset -> existingAsset.hasSameIdAndDifferentCountryAs(asset)).findFirst();
+    private Stream<DownloadedAsset> findSimilarTo(Asset asset) {
+        return assets.stream().filter(existingAsset -> existingAsset.hasSameIdAndDifferentCountryAs(asset));
     }
 
     private boolean alreadyHas(Asset asset) {
