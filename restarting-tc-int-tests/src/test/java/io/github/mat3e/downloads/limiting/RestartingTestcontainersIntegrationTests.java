@@ -5,12 +5,13 @@ import io.github.mat3e.downloads.limiting.api.Asset;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.utility.DockerImageName;
@@ -19,10 +20,14 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 import static java.util.Collections.emptyList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.assertj.core.api.BDDAssertions.thenExceptionOfType;
+import static org.awaitility.Awaitility.await;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -30,6 +35,46 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class RestartingTestcontainersIntegrationTests {
+    @Nested
+    @IntegrationTest
+    class AccountLimitEventListenerTest {
+        private static final AccountId ACCOUNT_ID = AccountId.valueOf("1");
+
+        @Autowired
+        private KafkaTemplate<String, Message> kafkaTemplate;
+
+        @Autowired
+        private LimitingFacade facadeNeededByListener;
+
+        @Container
+        @ServiceConnection
+        static MariaDBContainer<?> mariaDb = new MariaDBContainer<>(DockerImageName.parse("mariadb:11"));
+
+        @Container
+        @ServiceConnection
+        static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.4.6"));
+
+        @Test
+        void incomingMessage_startsProcessing() throws ExecutionException, InterruptedException {
+            whenAccountLimitMessage(2);
+            // and
+            await().atMost(5, SECONDS).until(interactedWithFacade());
+
+            then(facadeNeededByListener.findForAccount(ACCOUNT_ID)).isPresent();
+        }
+
+        private void whenAccountLimitMessage(int limit) throws ExecutionException, InterruptedException {
+            kafkaTemplate.send("limit-changes", new Message(ACCOUNT_ID.getId(), limit)).get();
+        }
+
+        private Callable<Boolean> interactedWithFacade() {
+            return () -> facadeNeededByListener.findForAccount(ACCOUNT_ID).isPresent();
+        }
+
+        record Message(String accountId, int limit) {
+        }
+    }
+
     @Nested
     @IntegrationTest
     class LimitingControllerTest {
@@ -42,7 +87,12 @@ class RestartingTestcontainersIntegrationTests {
         private LimitingFacade facadeNeededByController;
 
         @Container
+        @ServiceConnection
         static MariaDBContainer<?> mariaDb = new MariaDBContainer<>(DockerImageName.parse("mariadb:11"));
+
+        @Container
+        @ServiceConnection
+        static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.4.6"));
 
         @Test
         void illegalParams_returnsBadRequest() throws Exception {
@@ -92,13 +142,6 @@ class RestartingTestcontainersIntegrationTests {
                     .contentType(APPLICATION_JSON)
                     .content(String.join("\n", jsonLines)));
         }
-
-        @DynamicPropertySource
-        static void props(DynamicPropertyRegistry registry) {
-            registry.add("spring.datasource.url", mariaDb::getJdbcUrl);
-            registry.add("spring.datasource.username", mariaDb::getUsername);
-            registry.add("spring.datasource.password", mariaDb::getPassword);
-        }
     }
 
     @Nested
@@ -113,7 +156,12 @@ class RestartingTestcontainersIntegrationTests {
         private final Clock clock = Clock.fixed(Instant.now(), ZoneOffset.UTC);
 
         @Container
+        @ServiceConnection
         static MariaDBContainer<?> mariaDb = new MariaDBContainer<>(DockerImageName.parse("mariadb:11"));
+
+        @Container
+        @ServiceConnection
+        static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.4.6"));
 
         @Test
         void accountLifecycle() {
@@ -161,13 +209,6 @@ class RestartingTestcontainersIntegrationTests {
                     1
             )).withMessageContaining("test-asset");
         }
-
-        @DynamicPropertySource
-        static void props(DynamicPropertyRegistry registry) {
-            registry.add("spring.datasource.url", mariaDb::getJdbcUrl);
-            registry.add("spring.datasource.username", mariaDb::getUsername);
-            registry.add("spring.datasource.password", mariaDb::getPassword);
-        }
     }
 
     @Nested
@@ -177,7 +218,12 @@ class RestartingTestcontainersIntegrationTests {
         private AccountSettingRepository systemUnderTest;
 
         @Container
+        @ServiceConnection
         static MariaDBContainer<?> mariaDb = new MariaDBContainer<>(DockerImageName.parse("mariadb:11"));
+
+        @Container
+        @ServiceConnection
+        static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.4.6"));
 
         @Test
         void accountSettingLifecycle() {
@@ -202,13 +248,6 @@ class RestartingTestcontainersIntegrationTests {
                 then(updatedAccount.limit()).isEqualTo(2);
                 then(updatedAccount).extracting("version").isEqualTo(1);
             });
-        }
-
-        @DynamicPropertySource
-        static void props(DynamicPropertyRegistry registry) {
-            registry.add("spring.datasource.url", mariaDb::getJdbcUrl);
-            registry.add("spring.datasource.username", mariaDb::getUsername);
-            registry.add("spring.datasource.password", mariaDb::getPassword);
         }
     }
 }
