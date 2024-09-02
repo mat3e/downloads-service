@@ -2,6 +2,8 @@ package io.github.mat3e.downloads.limiting;
 
 import io.github.mat3e.downloads.limiting.api.AccountId;
 import io.github.mat3e.downloads.limiting.api.Asset;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class RestartingTestcontainersIntegrationTests {
+    static long timer = 0;
+
+    @BeforeAll
+    static void setUp() {
+        timer = System.currentTimeMillis();
+    }
+
+    @AfterAll
+    static void tearDown() {
+        System.out.println("Execution time: " + (System.currentTimeMillis() - timer));
+    }
+
     @Nested
     @IntegrationTest
     class AccountLimitEventListenerTest {

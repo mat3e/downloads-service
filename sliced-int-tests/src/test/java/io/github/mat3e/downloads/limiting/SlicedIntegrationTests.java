@@ -4,6 +4,8 @@ import io.github.mat3e.downloads.DownloadsApplication;
 import io.github.mat3e.downloads.exceptionhandling.BusinessException;
 import io.github.mat3e.downloads.limiting.api.AccountId;
 import io.github.mat3e.downloads.limiting.api.Asset;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -52,6 +54,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ActiveProfiles("test")
 class SlicedIntegrationTests {
+    static long timer = 0;
+
+    @BeforeAll
+    static void setUp() {
+        timer = System.currentTimeMillis();
+    }
+
+    @AfterAll
+    static void tearDown() {
+        System.out.println("Execution time: " + (System.currentTimeMillis() - timer));
+    }
+
     @Nested
     @SpringBootTest(classes = {DownloadsApplication.class})
     @TestInstance(PER_CLASS)
