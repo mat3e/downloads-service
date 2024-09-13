@@ -28,4 +28,4 @@ information and translating it into events, consumed as `Account` configuration 
     * BDD.
 * `LimitingIntTest` - integration tests, starting the whole app with Spring.
     * Dedicated properties (`application-test.yaml`), building on top of production ones.
-    * Setting up with facade (in the future it should probably be a message broker), asserting with REST APIs.
+    * Setting up with an incoming message, asserting with REST APIs.
