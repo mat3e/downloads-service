@@ -5,7 +5,7 @@ App itself and tests I'd normally write in the project.
 ## App
 
 * `limiting` - "core of the core" responsible for storing the configuration and validating downloads.
-    * `LimitingFacade` - main entry point, for REST APIs and for overriding `Account`'s limit (not used yet).
+    * `LimitingFacade` - main entry point, for REST APIs and for overriding `Account`'s limit.
 * `reporting` - generic component, consuming events from other parts of the system.
     * For now just for collecting suspicious `Account`'s activity, like downloading the same `Asset` in a different
       country.
