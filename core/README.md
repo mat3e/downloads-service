@@ -15,7 +15,7 @@ App itself and tests I'd normally write in the project.
 * `exceptionhandling` - another technical component, for making user-facing errors more readable.
 
 Potentially, there should be another business component (like `assignment`) for storing `Account` subscription
-information and translating it into events, consumed as `Account` configuration changes by `limiting`.
+information and translating it into events, consumed by `limiting` as `Account` configuration changes.
 
 ## Testing
 
