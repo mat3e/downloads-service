@@ -190,7 +190,6 @@ class ReusedTestcontainersIntegrationTests {
                 new MariaDBContainer<>(DockerImageName.parse("mariadb:11")).withReuse(true);
 
         @ServiceConnection
-
         static KafkaContainer kafka =
                 new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.4.6")).withReuse(true);
 
